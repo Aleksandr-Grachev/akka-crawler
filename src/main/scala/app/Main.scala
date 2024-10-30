@@ -1,60 +1,34 @@
 package app
 
+import org.apache.pekko.Done
+import org.apache.pekko.actor.CoordinatedShutdown
 import org.apache.pekko.actor.typed._
 import org.apache.pekko.actor.typed.scaladsl._
 import org.apache.pekko.http.scaladsl.Http
+import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import org.apache.pekko.http.scaladsl.model._
 import org.apache.pekko.http.scaladsl.server.Directives._
 import org.apache.pekko.util.ByteString
+import spray.json.DefaultJsonProtocol._
+import spray.json.RootJsonFormat
+import spray.json._
 
 import java.io.IOException
 import java.net.URI
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
+import scala.concurrent._
 import scala.io.StdIn
 import scala.util._
 import scala.util.matching.Regex
-
-import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import spray.json.DefaultJsonProtocol._
-import spray.json.RootJsonFormat
-import org.apache.pekko.actor.CoordinatedShutdown
-import org.apache.pekko.Done
-import spray.json._
 
 object Main {
 
   val HTTP_PORT  = 7777
   val STASH_SIZE = 100
-  final case class UrlRequest(urls: List[Uri])
-
-  implicit val uriFormat: RootJsonFormat[Uri] =
-    new RootJsonFormat[Uri] {
-      def read(json: JsValue): Uri =
-        json match {
-
-          case JsString(value) =>
-            try {
-              val ret = Uri.parseAbsolute(org.parboiled2.ParserInput(value))
-              ret
-            } catch {
-              case IllegalUriException(ex) =>
-                deserializationError(
-                  s"The given value[$value] isn't a valid URI"
-                )
-            }
-
-          case other =>
-            deserializationError("An JsString expected with Uri format")
-
-        }
-      def write(obj: Uri): JsValue = JsString(obj.toString())
-    }
-  implicit val urlRequestFormat: RootJsonFormat[UrlRequest] = jsonFormat1(
-    UrlRequest.apply
-  )
 
   def main(args: Array[String]): Unit = {
+
+    import app.model._
+    import app.model.jsonProto._
 
     implicit val system = ActorSystem(Behaviors.empty, "crawler-system")
 
