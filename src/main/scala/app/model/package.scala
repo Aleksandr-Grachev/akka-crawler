@@ -8,7 +8,7 @@ package object model {
 
   sealed trait TitleAnswer
 
-  final case class Ok(v: String) extends TitleAnswer
+  final case class Ok(title: String) extends TitleAnswer
   final case class Err(status: Option[Int], message: String) extends TitleAnswer
 
   final case class Title(uri: Uri, answer: TitleAnswer)

@@ -5,7 +5,7 @@ import spray.json.DefaultJsonProtocol._
 import org.apache.pekko.http.scaladsl.model.Uri
 import _root_.scala.util.control.NonFatal
 
-package object jsonProto {
+package object jsonProto extends DefaultJsonProtocol {
 
   implicit val uriFormat: RootJsonFormat[Uri] =
     new RootJsonFormat[Uri] {
@@ -32,4 +32,27 @@ package object jsonProto {
   implicit val urlRequestFormat: RootJsonFormat[UrlRequest] = jsonFormat1(
     UrlRequest
   )
+
+  implicit val titleAnswerOkFormat: RootJsonFormat[Ok] = jsonFormat1(Ok.apply)
+  implicit val titleAnswerErrFormat: RootJsonFormat[Err] = jsonFormat2(
+    Err.apply
+  )
+
+  implicit val titleAnswerFormat: RootJsonFormat[TitleAnswer] =
+    new RootJsonFormat[TitleAnswer] {
+      def read(json: JsValue): TitleAnswer = {
+        if (json.asJsObject.fields.contains("title")) {
+          json.convertTo[Ok]
+        } else {
+          json.convertTo[Err]
+        }
+      }
+      def write(obj: TitleAnswer): JsValue =
+        obj match {
+          case err: Err => err.toJson
+          case ok:  Ok  => ok.toJson
+        }
+    }
+
+  implicit val titleFormat: RootJsonFormat[Title] = jsonFormat2(Title)
 }
