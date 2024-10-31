@@ -74,7 +74,7 @@ class Master(
         val title: Title =
           Title(
             uri = uri,
-            answer = Ok(v = value)
+            answer = Ok(title = value)
           )
 
         handleTitle(inProgress, title, acc, replyTo)

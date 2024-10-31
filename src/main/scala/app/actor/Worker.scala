@@ -86,13 +86,15 @@ class Worker(ctx: ActorContext[Command], stashBuffer: StashBuffer[Command])(
 
   def findTitle(entity: ResponseEntity): Future[String] =
     entity.dataBytes.runFold(ByteString(""))(_ ++ _).map { byteString =>
-      byteString.utf8String match {
-        case Worker.titlePattern(title) =>
-          title
-        case other =>
+      val utf8String = byteString.utf8String
+      titlePattern.findFirstMatchIn(utf8String).map(_.group(1)) match {
+        case None =>
           throw new IOException(
-            s"Received reponse doesn't contain title tag[${other.take(100)}...]"
+            s"Received reponse doesn't contain title tag[${utf8String.take(100)}...]"
           )
+
+        case Some(title) => title
+
       }
     }
 
@@ -100,7 +102,7 @@ class Worker(ctx: ActorContext[Command], stashBuffer: StashBuffer[Command])(
 
 object Worker {
 
-  val titlePattern: Regex = "(?i)title>(.+)<.*".r
+  val titlePattern: Regex = """(?i)<title>(.*?)</title>""".r
 
   sealed trait Command
 
