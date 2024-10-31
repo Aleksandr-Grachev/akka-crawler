@@ -19,35 +19,84 @@ import scala.concurrent._
 import scala.io.StdIn
 import scala.util._
 import scala.util.matching.Regex
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.http.scaladsl.model.HttpEntity.Chunk
+import app.actor.Master
+import java.util.concurrent.Executors
+import org.apache.pekko.util.Timeout
+import scala.concurrent.duration._
 
 object Main {
 
-  val HTTP_PORT  = 7777
-  val STASH_SIZE = 100
+  //TODO: move as params to app conf
+  val HTTP_PORT        = 7777
+  val STASH_SIZE       = 100
+  val POLL_SIZE        = 10
+  val THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors()
+  val ASK_TIMEOUT      = 60.seconds
 
   def main(args: Array[String]): Unit = {
 
     import app.model._
     import app.model.jsonProto._
+    import org.apache.pekko.actor.typed.scaladsl.AskPattern.Askable
 
-    implicit val system = ActorSystem(Behaviors.empty, "crawler-system")
+    implicit val timeout: Timeout = Timeout(ASK_TIMEOUT)
 
-    implicit val executionContext = system.executionContext
+    val fixedEC: ExecutionContext = ExecutionContext.fromExecutorService(
+      Executors.newFixedThreadPool(THREAD_POOL_SIZE)
+    )
+
+    implicit val rootBehaviour: ActorSystem[Master.Command] = ActorSystem(
+      Master(
+        poolSize = POLL_SIZE,
+        bufferSize = STASH_SIZE
+      )(fixedEC),
+      "crawler-system"
+    )
+
+    implicit val scheduler: Scheduler = rootBehaviour.scheduler
+
+    implicit val executionContext = rootBehaviour.executionContext
+
+    val numbers =
+      Source.fromIterator(() => Iterator.continually(Random.nextInt(100)))
 
     val route =
       path("urls") {
         post {
           entity(as[UrlRequest]) { urlRequest: UrlRequest =>
-            complete(
-              HttpEntity(
-                ContentTypes.`text/html(UTF-8)`,
-                s"<h1>Say hello to Pekko HTTP[$urlRequest]</h1>"
-              )
-            )
+            complete {
+              rootBehaviour
+                .ask[Master.Event] { replyTo =>
+                  Master.Command.DoRequest(request = urlRequest, replyTo)
+                }
+                .map { case Master.Event.EventTitles(titles) =>
+                  titles
+                }
+            }
           }
-
         }
-      }
+      } // ~
+    // path("random") {
+    //   get {
+    //     complete(
+    //       HttpEntity.Chunked(
+    //         ContentTypes.`text/plain(UTF-8)`,
+    //         // transform each number to a chunk of bytes
+    //         numbers.map {
+    //           case n if n < 77 =>
+    //             HttpEntity.Chunk(s"$n\n")
+
+    //           case x: Int =>
+    //             HttpEntity.LastChunk(
+    //               s"Last $x" //ext
+    //             ) 
+    //         }
+    //       )
+    //     )
+    //   }
+    // }
 
     val bindingFuture =
       Http().newServerAt("localhost", HTTP_PORT).bind(route).andThen {
@@ -62,7 +111,7 @@ object Main {
           )
       }
 
-    CoordinatedShutdown(system).addTask(
+    CoordinatedShutdown(rootBehaviour).addTask(
       CoordinatedShutdown.PhaseBeforeServiceUnbind,
       "info"
     ) { () =>
