@@ -4,14 +4,11 @@ import org.apache.pekko.actor.typed._
 import org.apache.pekko.actor.typed.scaladsl._
 import org.apache.pekko.http.scaladsl.Http
 import org.apache.pekko.http.scaladsl.model._
-import org.apache.pekko.http.scaladsl.server.Directives._
 import org.apache.pekko.util.ByteString
 
 import java.io.IOException
-import java.net.URI
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
-import scala.io.StdIn
 import scala.util._
 import scala.util.matching.Regex
 
@@ -21,7 +18,7 @@ class Worker(ctx: ActorContext[Command], stashBuffer: StashBuffer[Command])(
     implicit ec: ExecutionContext
 ) {
 
-  implicit val system = ctx.system
+  implicit val system: ActorSystem[Nothing] = ctx.system
 
   def ready(): Behavior[Command] =
     Behaviors.receiveMessagePartial[Command] {
@@ -57,7 +54,7 @@ class Worker(ctx: ActorContext[Command], stashBuffer: StashBuffer[Command])(
 
   def doRequest(uri: Uri, replyTo: ActorRef[Event]): Future[Command] =
     Http().singleRequest(HttpRequest(uri = uri)).flatMap {
-      case response @ HttpResponse(StatusCodes.OK, _, entity, _) =>
+      case HttpResponse(StatusCodes.OK, _, entity, _) =>
         findTitle(entity = entity).map { title =>
           Command.DoAnswer(
             Event.Ok(
