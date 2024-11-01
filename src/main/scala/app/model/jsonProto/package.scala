@@ -1,7 +1,6 @@
 package app.model
 
 import spray.json._
-import spray.json.DefaultJsonProtocol._
 import org.apache.pekko.http.scaladsl.model.Uri
 import _root_.scala.util.control.NonFatal
 
@@ -17,13 +16,13 @@ package object jsonProto extends DefaultJsonProtocol {
               val ret = Uri.parseAbsolute(org.parboiled2.ParserInput(value))
               ret
             } catch {
-              case NonFatal(ex) =>
+              case NonFatal(_) =>
                 deserializationError(
                   s"The given value[$value] isn't a valid URI"
                 )
             }
 
-          case other =>
+          case _ =>
             deserializationError("An JsString expected with Uri format")
 
         }
