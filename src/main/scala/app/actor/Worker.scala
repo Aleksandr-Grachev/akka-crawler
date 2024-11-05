@@ -107,8 +107,10 @@ object Worker {
     final case class DoRequest(uri: Uri, replyTo: ActorRef[Event])
         extends Command
 
-    final case class DoAnswer(ev: Event, replyTo: ActorRef[Event])
-        extends Command
+    private[Worker] final case class DoAnswer(
+        ev:      Event,
+        replyTo: ActorRef[Event]
+    ) extends Command
   }
 
   sealed trait Event
