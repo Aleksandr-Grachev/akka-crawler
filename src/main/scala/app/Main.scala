@@ -63,6 +63,8 @@ object Main {
       "crawler-system"
     )
 
+    //rootBehaviour.logConfiguration()
+
     implicit val executionContext = rootBehaviour.executionContext
 
     val workerFlow: Flow[Uri, String, NotUsed] =
