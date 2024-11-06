@@ -8,6 +8,7 @@ ThisBuild / scalaVersion := "2.13.15"
 libraryDependencies ++= pekko.pekkoTypedDeps
 libraryDependencies ++= loggingDeps
 libraryDependencies ++= pureConfigDeps
+libraryDependencies ++= scoptDeps
 //test
 libraryDependencies ++= mockServerDeps
 libraryDependencies ++= scalaTestDeps

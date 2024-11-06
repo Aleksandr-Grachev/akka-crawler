@@ -37,6 +37,13 @@ object Dependency {
     )
   }
 
+  lazy val scoptDeps: Seq[ModuleID] = {
+    val V = "4.1.0"
+    Seq(
+      "com.github.scopt" %% "scopt" % V
+    )
+  }
+
   lazy val mockServerDeps = {
     val V = "5.15.0"
     Seq(

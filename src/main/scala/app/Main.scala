@@ -22,6 +22,8 @@ import spray.json._
 import java.util.concurrent.Executors
 import scala.concurrent._
 import scala.util._
+import pureconfig.error.ConfigReaderFailures
+import pureconfig.error.CannotRead
 
 object Main {
   import app.actor.Worker
@@ -30,6 +32,7 @@ object Main {
 
     import app.model._
     import app.model.config._
+    import app.cli._
     import app.model.jsonProto._
 
     val log = LoggerFactory.getLogger("Main")
@@ -38,7 +41,16 @@ object Main {
       (for {
         raw <- ConfigSource.default.config()
         app <- ConfigSource.fromConfig(raw).at("app").load[AppConf]
-      } yield app) match {
+        mergedWithCmd <- loadAppConfig(args, app).left.map { ex: Exception =>
+          ConfigReaderFailures(
+            new CannotRead {
+              override val sourceName = "command line"
+              override val sourceType: String            = "command line args"
+              override val reason:     Option[Throwable] = Some(ex)
+            }
+          )
+        }
+      } yield mergedWithCmd) match {
         case Left(value) =>
           log.error("Start application failed because of config failures")
           value.prettyPrint()
