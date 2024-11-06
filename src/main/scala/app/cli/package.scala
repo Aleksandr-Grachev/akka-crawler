@@ -31,7 +31,8 @@ package object cli {
         .optional()
         .text(
           s"Maximum number of hops for redirect responses"
-        )
+        ),
+      help("help").text("prints this usage text")
     )
   }
 
