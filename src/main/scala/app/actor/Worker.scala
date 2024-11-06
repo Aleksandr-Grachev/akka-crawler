@@ -19,7 +19,7 @@ class Worker(
     ctx:            ActorContext[Command],
     stashBuffer:    StashBuffer[Command],
     followLocation: Boolean,
-    followMaxDepth: Int
+    followMaxHop: Int
 )(implicit
     ec: ExecutionContext
 ) {
@@ -89,7 +89,7 @@ class Worker(
       case response @ HttpResponse(status, headers, _, _)
           if followLocation &&
             status.isRedirection() &&
-            currentDepth < followMaxDepth =>
+            currentDepth < followMaxHop =>
         val command: Command =
           headers
             .find(_.is("location")) match {
@@ -212,7 +212,7 @@ object Worker {
     final case class Ok(uri: Uri, title: String) extends Event
   }
 
-  def apply(bufferSize: Int, followLocation: Boolean, followMaxDepth: Int)(
+  def apply(bufferSize: Int, followLocation: Boolean, followMaxHop: Int)(
       implicit ec: ExecutionContext
   ) =
     Behaviors.setup[Command] { ctx: ActorContext[Command] =>
@@ -221,7 +221,7 @@ object Worker {
           ctx = ctx,
           stashBuffer = stashBuffer,
           followLocation = followLocation,
-          followMaxDepth = followMaxDepth
+          followMaxHop = followMaxHop
         ).ready()
       }
 

@@ -38,7 +38,7 @@ class WorkerTestSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
           Worker.apply(
             bufferSize = 10,
             followLocation = false,
-            followMaxDepth = 0
+            followMaxHop = 0
           )(fixedEC)
         )
 
@@ -100,7 +100,7 @@ class WorkerTestSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
           Worker.apply(
             bufferSize = 10,
             followLocation = true,
-            followMaxDepth = 5
+            followMaxHop = 5
           )(fixedEC)
         )
 
@@ -108,7 +108,10 @@ class WorkerTestSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
         val probe: TestProbe[Worker.Event] =
           testKit.createTestProbe[Worker.Event]()
 
-        instance ! Worker.Command.DoRequest(mkMockUri("follow-location"), probe.ref)
+        instance ! Worker.Command.DoRequest(
+          mkMockUri("follow-location"),
+          probe.ref
+        )
 
         probe.expectMessageType[Worker.Event.Ok]
 
@@ -118,7 +121,10 @@ class WorkerTestSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
         val probe: TestProbe[Worker.Event] =
           testKit.createTestProbe[Worker.Event]()
 
-        instance ! Worker.Command.DoRequest(mkMockUri("follow-location-bad"), probe.ref)
+        instance ! Worker.Command.DoRequest(
+          mkMockUri("follow-location-bad"),
+          probe.ref
+        )
 
         probe.expectMessageType[Worker.Event.Err]
 
