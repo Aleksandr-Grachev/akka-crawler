@@ -30,6 +30,13 @@ object Dependency {
     )
   }
 
+  lazy val pureConfigDeps = {
+    val V = "0.17.7"
+    Seq(
+      "com.github.pureconfig" %% "pureconfig" % V
+    )
+  }
+
   lazy val mockServerDeps = {
     val V = "5.15.0"
     Seq(

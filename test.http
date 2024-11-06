@@ -6,6 +6,5 @@ content-type: application/json
             "http://example.com/index.html?a=b",
             "https://example.com",
             "http://freebsd.org"
-        
             ]
 }

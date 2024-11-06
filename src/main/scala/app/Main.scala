@@ -14,62 +14,77 @@ import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.stream.typed.scaladsl.ActorFlow
 import org.apache.pekko.util.ByteString
 import org.apache.pekko.util.Timeout
+import org.slf4j.LoggerFactory
+import pureconfig._
+import pureconfig.generic.auto._
 import spray.json._
 
 import java.util.concurrent.Executors
 import scala.concurrent._
-import scala.concurrent.duration._
 import scala.util._
 
 object Main {
   import app.actor.Worker
-  // TODO: move as params to app conf
-  val HTTP_PORT                = 7777
-  val STASH_SIZE               = 100
-  val POLL_SIZE                = 10
-  val THREAD_POOL_SIZE         = Runtime.getRuntime().availableProcessors()
-  val ASK_TIMEOUT              = 60.seconds
-  val FOLLOW_LOCATION          = true
-  val FOLLOW_LOCATION_MAX_DEPT = 3
 
   def main(args: Array[String]): Unit = {
 
     import app.model._
+    import app.model.config._
     import app.model.jsonProto._
 
-    implicit val timeout: Timeout = Timeout(ASK_TIMEOUT)
+    val log = LoggerFactory.getLogger("Main")
 
-    val fixedEC: ExecutionContext = ExecutionContext.fromExecutorService(
-      Executors.newFixedThreadPool(THREAD_POOL_SIZE)
-    )
+    val config: AppConf =
+      (for {
+        raw <- ConfigSource.default.config()
+        app <- ConfigSource.fromConfig(raw).at("app").load[AppConf]
+      } yield app) match {
+        case Left(value) =>
+          log.error("Start application failed because of config failures")
+          value.prettyPrint()
+          sys.exit(1)
+        case Right(conf) =>
+          conf
+      }
+
+    implicit val timeout: Timeout = Timeout(config.askTimeout)
+
+    val fixedEC: ExecutionContext =
+      ExecutionContext.fromExecutorService(
+        Executors.newFixedThreadPool(
+          config.threadPoolSize.getOrElse(
+            Runtime.getRuntime().availableProcessors()
+          )
+        )
+      )
 
     val pool: PoolRouter[Worker.Command] =
       Routers
-        .pool(poolSize = POLL_SIZE) {
+        .pool(poolSize = config.workerPoolSize) {
           Behaviors
             .supervise(
               Worker(
-                bufferSize = STASH_SIZE,
-                followLocation = FOLLOW_LOCATION,
-                followMaxDepth = FOLLOW_LOCATION_MAX_DEPT
+                bufferSize = config.stashSize,
+                followLocation = config.followLocation,
+                followMaxHop = config.followLocationMaxHop
               )(fixedEC)
             )
             .onFailure[Exception](SupervisorStrategy.restart)
         }
-        .withRoundRobinRouting()
+        .withRoundRobinRouting() // add explicity
 
     implicit val rootBehaviour: ActorSystem[Worker.Command] = ActorSystem(
       pool,
       "crawler-system"
     )
 
-    //rootBehaviour.logConfiguration()
+    // rootBehaviour.logConfiguration()
 
     implicit val executionContext = rootBehaviour.executionContext
 
     val workerFlow: Flow[Uri, String, NotUsed] =
       ActorFlow
-        .ask(POLL_SIZE)(rootBehaviour)(makeMessage =
+        .ask(config.workerPoolSize)(rootBehaviour)(makeMessage =
           (uri: Uri, replyTo: ActorRef[Worker.Event]) =>
             Worker.Command.DoRequest(uri = uri, replyTo = replyTo)
         )
@@ -106,10 +121,10 @@ object Main {
         }
       }
 
-    Http().newServerAt("localhost", HTTP_PORT).bind(route).andThen {
+    Http().newServerAt("localhost", config.httpPort).bind(route).andThen {
       case Success(value) =>
         println(
-          s"Server now online. Please navigate to http://localhost:$HTTP_PORT/urls"
+          s"Server now online. Please navigate to http://localhost:${config.httpPort}/urls"
         )
 
       case Failure(ex) =>
