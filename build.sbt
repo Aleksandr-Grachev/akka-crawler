@@ -34,4 +34,4 @@ assembly / assemblyMergeStrategy := {
 
 assembly / mainClass := Some("app.Main")
 
-assembly / assemblyJarName := s"crawler-app-${version.value.takeWhile(_ != '-')}"
+assembly / assemblyJarName := s"crawler-app-${version.value.takeWhile(_ != '-')}.jar"
