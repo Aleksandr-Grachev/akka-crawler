@@ -24,11 +24,13 @@ import scala.util._
 object Main {
   import app.actor.Worker
   // TODO: move as params to app conf
-  val HTTP_PORT        = 7777
-  val STASH_SIZE       = 100
-  val POLL_SIZE        = 10
-  val THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors()
-  val ASK_TIMEOUT      = 60.seconds
+  val HTTP_PORT                = 7777
+  val STASH_SIZE               = 100
+  val POLL_SIZE                = 10
+  val THREAD_POOL_SIZE         = Runtime.getRuntime().availableProcessors()
+  val ASK_TIMEOUT              = 60.seconds
+  val FOLLOW_LOCATION          = true
+  val FOLLOW_LOCATION_MAX_DEPT = 3
 
   def main(args: Array[String]): Unit = {
 
@@ -45,7 +47,13 @@ object Main {
       Routers
         .pool(poolSize = POLL_SIZE) {
           Behaviors
-            .supervise(Worker(STASH_SIZE)(fixedEC))
+            .supervise(
+              Worker(
+                bufferSize = STASH_SIZE,
+                followLocation = FOLLOW_LOCATION,
+                followMaxDepth = FOLLOW_LOCATION_MAX_DEPT
+              )(fixedEC)
+            )
             .onFailure[Exception](SupervisorStrategy.restart)
         }
         .withRoundRobinRouting()

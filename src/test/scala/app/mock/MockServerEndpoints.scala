@@ -1,8 +1,9 @@
 package app.mock
 import org.mockserver.integration._
-import org.mockserver.model.HttpRequest.request;
-import org.mockserver.model.HttpResponse.response;
 import org.mockserver.mock.Expectation
+import org.mockserver.model.HttpRequest.request
+import org.mockserver.model.HttpResponse.response
+
 import scala.util.Random
 
 object MockServerEndpoints {
@@ -51,6 +52,31 @@ object MockServerEndpoints {
       )
       .respond(
         response().withStatusCode(404)
+      )
+
+    mockCS
+      .when(
+        request()
+          .withMethod("GET")
+          .withPath("/follow-location")
+      )
+      .respond(
+        response()
+          .withHeader("Location", "/index.html")
+          .withStatusCode(302)
+      )
+
+    mockCS
+      .when(
+        request()
+          .withMethod("GET")
+          .withPath("/follow-location-bad")
+      )
+      .respond(
+        response()
+          .withStatusCode( // No Location header,so an error expected in Worker
+            302
+          )
       )
 
   }

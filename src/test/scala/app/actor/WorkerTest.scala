@@ -34,7 +34,13 @@ class WorkerTestSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
     "DoRequest call" should {
 
       val instance: ActorRef[Worker.Command] =
-        testKit.spawn(Worker.apply(10)(fixedEC))
+        testKit.spawn(
+          Worker.apply(
+            bufferSize = 10,
+            followLocation = false,
+            followMaxDepth = 0
+          )(fixedEC)
+        )
 
       "return Ok for /index.html" in {
         val probe: TestProbe[Worker.Event] =
@@ -86,6 +92,39 @@ class WorkerTestSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
       }
 
     }
+
+    "DoRequest call with follow location" should {
+
+      val instance: ActorRef[Worker.Command] =
+        testKit.spawn(
+          Worker.apply(
+            bufferSize = 10,
+            followLocation = true,
+            followMaxDepth = 5
+          )(fixedEC)
+        )
+
+      "return Ok for /follow-location" in {
+        val probe: TestProbe[Worker.Event] =
+          testKit.createTestProbe[Worker.Event]()
+
+        instance ! Worker.Command.DoRequest(mkMockUri("follow-location"), probe.ref)
+
+        probe.expectMessageType[Worker.Event.Ok]
+
+      }
+
+      "return Err for /follow-location-bad" in {
+        val probe: TestProbe[Worker.Event] =
+          testKit.createTestProbe[Worker.Event]()
+
+        instance ! Worker.Command.DoRequest(mkMockUri("follow-location-bad"), probe.ref)
+
+        probe.expectMessageType[Worker.Event.Err]
+
+      }
+    }
+
   }
 
   def mkMockUri(suffix: String) =
