@@ -8,8 +8,8 @@ import org.apache.pekko.http.scaladsl.model._
 import org.apache.pekko.util.ByteString
 
 import java.io.IOException
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
+import scala.concurrent._
+
 import scala.util._
 import scala.util.matching.Regex
 
@@ -19,7 +19,7 @@ class Worker(
     ctx:            ActorContext[Command],
     stashBuffer:    StashBuffer[Command],
     followLocation: Boolean,
-    followMaxHop: Int
+    followMaxHop:   Int
 )(implicit
     ec: ExecutionContext
 ) {
