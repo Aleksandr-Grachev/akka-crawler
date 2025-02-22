@@ -38,3 +38,4 @@ java -jar crawler-app-X.X
 java -jar crawler-app-X.X --help
 ```
 
+Пример запроса к сервису смотрите в `test.http`
