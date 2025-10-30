@@ -22,7 +22,7 @@
 
 Для удобства, можно
 * воспользоваться [sdkman](https://sdkman.io/).
-* или раскрутить .devcontainer который содержит code-server web IDE
+* или раскрутить `.devcontainer` который содержит [code-server](https://github.com/coder/code-server) web IDE
 
 После настройки окружения, запустите:
  ```shell
