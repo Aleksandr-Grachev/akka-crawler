@@ -20,7 +20,10 @@
 * Scala 2.13
 * sbt 1.10
 
-Для удобства, также, можно воспользоваться [sdkman](https://sdkman.io/).
+Для удобства, можно
+* воспользоваться [sdkman](https://sdkman.io/).
+* или раскрутить .devcontainer который содержит code-server web IDE
+
 После настройки окружения, запустите:
  ```shell
  sbt assembly

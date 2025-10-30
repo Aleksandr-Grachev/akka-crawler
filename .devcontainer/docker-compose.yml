@@ -1,0 +1,8 @@
+services:
+  scala-dev:
+    build: .
+    ports:
+      - "8183:8183"
+    volumes:
+      - ../:/workspace
+
